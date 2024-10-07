@@ -1,4 +1,4 @@
-const { countBy, maxBy } = require('lodash')
+const _ = require('lodash')
 
 const dummy = (blogs) => 1
 
@@ -10,28 +10,10 @@ const favoriteBlog = (blogs) =>
     ? {}
     : blogs.reduce((acc, val) => (acc.likes >= val.likes ? acc : val), blogs[0])
 
-const mostBlogs2 = (blogs) => {
-  const authorCount = blogs.reduce((acc, blog) => {
-    acc[blog.author] = (acc[blog.author] || 0) + 1
-    return acc
-  }, {})
-
-  let maxAuthor = ''
-  let maxBlogs = 0
-
-  for (const author in authorCount) {
-    if (authorCount[author] > maxBlogs) {
-      maxAuthor = author
-      maxBlogs = authorCount[author]
-    }
-  }
-  return { author: maxAuthor, blogs: maxBlogs }
-}
-
 const mostBlogs = (blogs) => {
-  const authorCount = countBy(blogs, 'author')
+  const authorCount = _.countBy(blogs, 'author')
 
-  const authorWithMostBlogs = maxBy(
+  const authorWithMostBlogs = _.maxBy(
     Object.keys(authorCount),
     (author) => authorCount[author]
   )
@@ -42,4 +24,15 @@ const mostBlogs = (blogs) => {
   }
 }
 
-module.exports = { dummy, totalLikes, favoriteBlog, mostBlogs }
+const mostLikes = (blogs) => {
+  const groupedByAuthor = _.groupBy(blogs, 'author')
+
+  const likesPerAuthor = _.map(groupedByAuthor, (blogs, author) => ({
+    author,
+    likes: _.sumBy(blogs, 'likes'),
+  }))
+
+  return _.maxBy(likesPerAuthor, 'likes') || { author: '', likes: 0 }
+}
+
+module.exports = { dummy, totalLikes, favoriteBlog, mostBlogs, mostLikes }
