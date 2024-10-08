@@ -2,11 +2,12 @@ const { describe, test, after, beforeEach } = require('node:test')
 const assert = require('node:assert')
 const mongoose = require('mongoose')
 const supertest = require('supertest')
-const Blog = require('../models/blog')
 const app = require('../app')
+const api = supertest(app)
+
 const { initialsBlogs, blogsInDb } = require('./test_helpers')
 
-const api = supertest(app)
+const Blog = require('../models/blog')
 
 beforeEach(async () => {
   await Blog.deleteMany({})
