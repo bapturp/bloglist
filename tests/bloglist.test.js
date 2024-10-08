@@ -5,34 +5,31 @@ const supertest = require('supertest')
 const app = require('../app')
 const api = supertest(app)
 
-const { initialsBlogs, blogsInDb } = require('./test_helpers')
+const { initialsBlogs, blogsInDb, nonExistingId } = require('./test_helpers')
 
 const Blog = require('../models/blog')
 
-beforeEach(async () => {
-  await Blog.deleteMany({})
+describe('when there is initially some blogs saved', () => {
+  beforeEach(async () => {
+    await Blog.deleteMany({})
 
-  for (blog of initialsBlogs) {
-    const blogObject = new Blog(blog)
-    await blogObject.save()
-  }
-})
+    await Blog.insertMany(initialsBlogs)
+  })
 
-describe('blogs', () => {
-  test('are returned as json', async () => {
+  test('blogs are returned as json', async () => {
     await api
       .get('/api/blogs')
       .expect(200)
       .expect('Content-Type', /application\/json/)
   })
 
-  test('returns 6 blogs', async () => {
+  test('all blogs are returned', async () => {
     const response = await api.get('/api/blogs')
 
-    assert.strictEqual(response.body.length, 6)
+    assert.strictEqual(response.body.length, initialsBlogs.length)
   })
 
-  test('the first blog is about React Patterns', async () => {
+  test('a specific blog is within the returned blogs', async () => {
     const response = await api.get('/api/blogs')
 
     const titles = response.body.map((blog) => blog.title)
@@ -40,69 +37,7 @@ describe('blogs', () => {
     assert.strictEqual(titles.includes('React patterns'), true)
   })
 
-  test('a valid blog can be added', async () => {
-    const newBlog = {
-      title: 'Building and operating a pretty big storage system called S3',
-      author: 'Werner Vogels',
-      url: 'https://www.allthingsdistributed.com/2023/07/building-and-operating-a-pretty-big-storage-system.html',
-      likes: 10,
-    }
-
-    await api
-      .post('/api/blogs')
-      .send(newBlog)
-      .expect(201)
-      .expect('Content-Type', /application\/json/)
-
-    const blogAtEnd = await blogsInDb()
-
-    assert.strictEqual(blogAtEnd.length, initialsBlogs.length + 1)
-
-    const titles = blogAtEnd.map((blog) => blog.title)
-
-    assert(titles.includes(newBlog.title))
-  })
-
-  test('blog without title is not added', async () => {
-    const newBlog = {
-      author: 'Bartosz Ciechanowski',
-      url: 'https://ciechanow.ski/gps/',
-    }
-
-    await api.post('/api/blogs').send(newBlog).expect(400)
-
-    const blogAtEnd = await blogsInDb()
-
-    assert.strictEqual(blogAtEnd.length, initialsBlogs.length)
-  })
-
-  test('blog without url is not added', async () => {
-    const newBlog = {
-      author: 'Bartosz Ciechanowski',
-      title: 'GPS',
-    }
-
-    await api.post('/api/blogs').send(newBlog).expect(400)
-
-    const blogAtEnd = await blogsInDb()
-
-    assert.strictEqual(blogAtEnd.length, initialsBlogs.length)
-  })
-
-  test('a specific blog can viewed', async () => {
-    const blogsAtStart = await blogsInDb()
-
-    const blogToView = blogsAtStart[0]
-
-    const resultBlog = await api
-      .get(`/api/blogs/${blogToView.id}`)
-      .expect(200)
-      .expect('Content-Type', /application\/json/)
-
-    assert.deepStrictEqual(resultBlog.body, blogToView)
-  })
-
-  test('blogs should have a property named `id`', async () => {
+  test('blogs should have the property id', async () => {
     const response = await api.get('/api/blogs')
 
     response.body.forEach((blog) =>
@@ -110,21 +45,114 @@ describe('blogs', () => {
     )
   })
 
-  test('blog without the `likes` property should be created with `likes: 0`', async () => {
-    const newBlog = {
-      title: 'Building and operating a pretty big storage system called S3',
-      author: 'Werner Vogels',
-      url: 'https://www.allthingsdistributed.com/2023/07/building-and-operating-a-pretty-big-storage-system.html',
-    }
+  describe('viewing a specific blog', () => {
+    test('succeeds with a valid id', async () => {
+      const blogsAtStart = await blogsInDb()
 
-    const resultBlog = await api
-      .post('/api/blogs')
-      .send(newBlog)
-      .expect(201)
-      .expect('Content-Type', /application\/json/)
+      const blogToView = blogsAtStart[0]
 
-    assert.strictEqual(resultBlog.body.hasOwnProperty('likes'), true)
-    assert.strictEqual(resultBlog.body.likes, 0)
+      const resultBlog = await api
+        .get(`/api/blogs/${blogToView.id}`)
+        .expect(200)
+        .expect('Content-Type', /application\/json/)
+
+      assert.deepStrictEqual(resultBlog.body, blogToView)
+    })
+
+    test('fails with status code 404 if blog does not exist', async () => {
+      const validNoneExistingId = await nonExistingId()
+
+      await api.get(`/api/blogs/${validNoneExistingId}`).expect(404)
+    })
+
+    test('fails with status code 400 if id is invalid', async () => {
+      const invalidId = '5a3d5da59070081a82a3445'
+
+      await api.get(`/api/blogs/${invalidId}`).expect(400)
+    })
+  })
+
+  describe('addition of a new blog', () => {
+    test('succeeds with valid data', async () => {
+      const newBlog = {
+        title: 'Building and operating a pretty big storage system called S3',
+        author: 'Werner Vogels',
+        url: 'https://www.allthingsdistributed.com/2023/07/building-and-operating-a-pretty-big-storage-system.html',
+        likes: 10,
+      }
+
+      await api
+        .post('/api/blogs')
+        .send(newBlog)
+        .expect(201)
+        .expect('Content-Type', /application\/json/)
+
+      const blogsAtEnd = await blogsInDb()
+
+      assert.strictEqual(blogsAtEnd.length, initialsBlogs.length + 1)
+
+      const titles = blogsAtEnd.map((blog) => blog.title)
+
+      assert(titles.includes(newBlog.title))
+    })
+
+    test('fails if title is not provided', async () => {
+      const newBlog = {
+        author: 'Bartosz Ciechanowski',
+        url: 'https://ciechanow.ski/gps/',
+      }
+
+      await api.post('/api/blogs').send(newBlog).expect(400)
+
+      const blogsAtEnd = await blogsInDb()
+
+      assert.strictEqual(blogsAtEnd.length, initialsBlogs.length)
+    })
+
+    test('fails if url is not provided', async () => {
+      const newBlog = {
+        author: 'Bartosz Ciechanowski',
+        title: 'GPS',
+      }
+
+      await api.post('/api/blogs').send(newBlog).expect(400)
+
+      const blogsAtEnd = await blogsInDb()
+
+      assert.strictEqual(blogsAtEnd.length, initialsBlogs.length)
+    })
+
+    test('blog without the property likes should be created with likes set to 0', async () => {
+      const newBlog = {
+        title: 'Building and operating a pretty big storage system called S3',
+        author: 'Werner Vogels',
+        url: 'https://www.allthingsdistributed.com/2023/07/building-and-operating-a-pretty-big-storage-system.html',
+      }
+
+      const resultBlog = await api
+        .post('/api/blogs')
+        .send(newBlog)
+        .expect(201)
+        .expect('Content-Type', /application\/json/)
+
+      assert.strictEqual(resultBlog.body.hasOwnProperty('likes'), true)
+      assert.strictEqual(resultBlog.body.likes, 0)
+    })
+  })
+  describe('deletion of a blog', () => {
+    test('succeeds with a valid id', async () => {
+      const blogsAtStart = await blogsInDb()
+      const blogToDelete = blogsAtStart[0]
+
+      await api.delete(`/api/blogs/${blogToDelete.id}`).expect(204)
+
+      const blogsAtEnd = await blogsInDb()
+
+      assert.strictEqual(blogsAtEnd.length, initialsBlogs.length - 1)
+
+      const titles = blogsAtEnd.map((blog) => blog.title)
+      assert(!titles.includes(blogToDelete.title))
+    })
   })
 })
 
