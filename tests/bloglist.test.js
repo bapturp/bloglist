@@ -64,7 +64,21 @@ describe('blogs', () => {
 
   test('blog without title is not added', async () => {
     const newBlog = {
-      author: 'bob',
+      author: 'Bartosz Ciechanowski',
+      url: 'https://ciechanow.ski/gps/',
+    }
+
+    await api.post('/api/blogs').send(newBlog).expect(400)
+
+    const blogAtEnd = await blogsInDb()
+
+    assert.strictEqual(blogAtEnd.length, initialsBlogs.length)
+  })
+
+  test('blog without url is not added', async () => {
+    const newBlog = {
+      author: 'Bartosz Ciechanowski',
+      title: 'GPS',
     }
 
     await api.post('/api/blogs').send(newBlog).expect(400)
