@@ -86,6 +86,14 @@ describe('blogs', () => {
 
     assert.deepStrictEqual(resultBlog.body, blogToView)
   })
+
+  test('blogs should have a property named `id`', async () => {
+    const response = await api.get('/api/blogs')
+
+    response.body.forEach((blog) =>
+      assert.strictEqual(blog.hasOwnProperty('id'), true)
+    )
+  })
 })
 
 after(async () => await mongoose.connection.close())
