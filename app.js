@@ -1,5 +1,6 @@
 const config = require('./utils/config')
 const express = require('express')
+require('express-async-errors')
 const app = express()
 const cors = require('cors')
 const blogRouter = require('./controllers/blogs')
@@ -12,7 +13,7 @@ mongoose.set('strictQuery', false)
 logger.info('connecting to MongoDB')
 
 mongoose
-  .connect(config.MONGODB_URL)
+  .connect(config.MONGODB_URI)
   .then(() => logger.info('connected to Mongodb'))
   .catch((error) => logger.error('error connecting to MongoDB:', error.message))
 
