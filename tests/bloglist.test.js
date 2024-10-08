@@ -44,6 +44,7 @@ describe('blogs', () => {
       title: 'Building and operating a pretty big storage system called S3',
       author: 'Werner Vogels',
       url: 'https://www.allthingsdistributed.com/2023/07/building-and-operating-a-pretty-big-storage-system.html',
+      likes: 10,
     }
 
     await api
@@ -92,6 +93,23 @@ describe('blogs', () => {
     response.body.forEach((blog) =>
       assert.strictEqual(blog.hasOwnProperty('id'), true)
     )
+  })
+
+  test('blog without the `likes` property should be created with `likes: 0`', async () => {
+    const newBlog = {
+      title: 'Building and operating a pretty big storage system called S3',
+      author: 'Werner Vogels',
+      url: 'https://www.allthingsdistributed.com/2023/07/building-and-operating-a-pretty-big-storage-system.html',
+    }
+
+    const resultBlog = await api
+      .post('/api/blogs')
+      .send(newBlog)
+      .expect(201)
+      .expect('Content-Type', /application\/json/)
+
+    assert.strictEqual(resultBlog.body.hasOwnProperty('likes'), true)
+    assert.strictEqual(resultBlog.body.likes, 0)
   })
 })
 
