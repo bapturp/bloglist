@@ -8,6 +8,7 @@ const api = supertest(app)
 const { initialsBlogs, blogsInDb, nonExistingId } = require('./test_helpers')
 
 const Blog = require('../models/blog')
+const { result } = require('lodash')
 
 describe('when there is initially some blogs saved', () => {
   beforeEach(async () => {
@@ -152,6 +153,29 @@ describe('when there is initially some blogs saved', () => {
 
       const titles = blogsAtEnd.map((blog) => blog.title)
       assert(!titles.includes(blogToDelete.title))
+    })
+  })
+  describe('updating a blog entry', () => {
+    test('succeeds with a valid id', async () => {
+      const blogsAtStart = await blogsInDb()
+
+      const blogToUpdate = blogsAtStart[0]
+
+      blogToUpdate.likes++
+
+      await api
+        .put(`/api/blogs/${blogToUpdate.id}`)
+        .send(blogToUpdate)
+        .expect(200)
+        .expect('Content-Type', /application\/json/)
+
+      const blogsAtEnd = await blogsInDb()
+
+      const resultBlog = blogsAtEnd.filter(
+        (b) => b.title === blogToUpdate.title
+      )[0]
+
+      assert.deepStrictEqual(resultBlog, blogToUpdate)
     })
   })
 })
