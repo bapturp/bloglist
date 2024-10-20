@@ -7,6 +7,11 @@ get_users ()
   curl -s $baseUrl/users
 }
 
+get_blogs ()
+{
+  curl -s $baseUrl/blogs
+}
+
 login ()
 {
   curl -s -H 'Content-Type: application/json' -d '{"username":"asmith","password":"asm123"}' $baseUrl/login
@@ -35,6 +40,9 @@ post_user ()
 case $1 in
   get-users)
     get_users
+    ;;
+  get-blogs)
+    get_blogs
     ;;
   login)
     login

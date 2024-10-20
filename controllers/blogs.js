@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken')
 const Blog = require('../models/blog')
 const User = require('../models/user')
 const { notFound } = require('../utils/middleware')
+const user = require('../models/user')
 
 const getTokenFrom = (request) => {
   const authorization = request.get('authorization')
@@ -13,7 +14,10 @@ const getTokenFrom = (request) => {
 }
 
 blogsRouter.get('/', async (request, response) => {
-  const blogs = await Blog.find({})
+  const blogs = await Blog.find({}).populate('user', {
+    username: 1,
+    name: 1,
+  })
   return response.json(blogs)
 })
 
