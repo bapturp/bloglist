@@ -56,6 +56,7 @@ case $1 in
   *)
     echo 'Usage request.sh:\n'
     echo '  get-users     List all users'
+    echo '  get-blogs     List all blogs'
     echo '  login         Get a JWT'
     echo '  post-blog     Create a new blog'
     echo '  post-user     Create a new user'
