@@ -1,7 +1,7 @@
 const mongoose = require('mongoose')
 
 const userSchema = new mongoose.Schema({
-  username: { type: String, required: true, unique: true },
+  username: { type: String, required: true, unique: true, minLength: 3 },
   name: { type: String, required: true },
   passwordHash: { type: String, required: true }, // password strengh verification must be done on the controller
   blogs: [

@@ -10,6 +10,12 @@ usersRouter.get('/', async (request, response) => {
 usersRouter.post('/', async (request, response) => {
   const { username, name, password } = request.body
 
+  if (password.length < 3) {
+    const e = new Error('Password does not meet the length')
+    e.name = 'PasswordValidation'
+    throw e
+  }
+
   const saltRounds = 10
   const passwordHash = await bcrypt.hash(password, saltRounds)
 

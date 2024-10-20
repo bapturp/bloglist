@@ -23,6 +23,15 @@ post_blog ()
     $baseUrl/blogs
 }
 
+post_user ()
+{
+  curl \
+    -s \
+    -H 'Content-Type: application/json' \
+    -d '{"username":"dgreen","name":"David Green","password":"s"}' \
+    $baseUrl/users
+}
+
 case $1 in
   get-users)
     get_users
@@ -30,13 +39,17 @@ case $1 in
   login)
     login
     ;;
-  post_blog)
+  post-blog)
     post_blog
+    ;;
+  post-user)
+    post_user
     ;;
   *)
     echo 'Usage request.sh:\n'
     echo '  get-users     List all users'
     echo '  login         Get a JWT'
-    echo '  post-blog     Post a blog'
+    echo '  post-blog     Create a new blog'
+    echo '  post-user     Create a new user'
     ;;
 esac

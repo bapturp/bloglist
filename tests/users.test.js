@@ -56,6 +56,53 @@ describe('when there is initially one user in db', () => {
 
     assert.strictEqual(usersAtEnd.length, usersAtStart.length)
   })
+
+  test('creation fails with username less than 3 characters', async () => {
+    const usersAtStart = await usersInDb()
+
+    const newUser = {
+      username: 'a',
+      name: 'Alice Smith',
+      password: 'asm123',
+    }
+
+    const result = await api
+      .post('/api/users')
+      .send(newUser)
+      .expect(400)
+      .expect('Content-Type', /application\/json/)
+
+    console.log(result.body.error)
+    assert(
+      result.body.error.includes(
+        'is shorter than the minimum allowed length (3).'
+      )
+    )
+
+    const usersAtEnd = await usersInDb()
+    assert.strictEqual(usersAtEnd.length, usersAtStart.length)
+  })
+
+  test('creation fails with password less than 3 characters', async () => {
+    const usersAtStart = await usersInDb()
+
+    const newUser = {
+      username: 'asmith',
+      name: 'Alice Smith',
+      password: 'a',
+    }
+
+    const result = await api
+      .post('/api/users')
+      .send(newUser)
+      .expect(400)
+      .expect('Content-Type', /application\/json/)
+
+    assert(result.body.error.includes('Password does not meet the length'))
+
+    const usersAtEnd = await usersInDb()
+    assert.strictEqual(usersAtEnd.length, usersAtStart.length)
+  })
 })
 
 after(async () => await mongoose.connection.close())
