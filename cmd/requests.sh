@@ -2,63 +2,90 @@
 
 baseUrl=http://localhost:8080/api
 
-get_users ()
-{
+username='dgreen'
+name='David Green'
+password='dgr123'
+
+getUsers () {
   curl -s $baseUrl/users
 }
 
-get_blogs ()
-{
+getBlogs () {
   curl -s $baseUrl/blogs
 }
 
-login ()
-{
-  curl -s -H 'Content-Type: application/json' -d '{"username":"asmith","password":"asm123"}' $baseUrl/login
+getBlog () {
+  curl -s "${baseUrl}/blogs/${1}"
 }
 
-post_blog ()
-{
-  token=$(login | jq -r '.token')
+getJWT () {
   curl \
     -s \
     -H 'Content-Type: application/json' \
-    -H "Authorization: Bearer ${token}" \
+    -d "{\"username\":\"${1}\",\"password\":\"${2}\"}" \
+    $baseUrl/login
+}
+
+createBlog () {
+  # $1 tokenId
+  curl \
+    -s \
+    -H 'Content-Type: application/json' \
+    -H "Authorization: Bearer ${1}" \
     -d '{"author":"Bob","title":"someblog","url":"http://example.com/blog1"}' \
     $baseUrl/blogs
 }
 
-post_user ()
-{
+
+deleteBlog () {
+  # $1 blogId
+  curl \
+    -s \
+    -X DELETE \
+    -H 'Content-Type: application/json' \
+    -H "Authorization: Bearer ${token}" \
+    "${baseUrl}/blogs/${1}"
+}
+
+postUser () {
+  # $1 username
+  # $2 name
+  # $3 password
   curl \
     -s \
     -H 'Content-Type: application/json' \
-    -d '{"username":"dgreen","name":"David Green","password":"s"}' \
+    -d "{\"username\":\"${1}\",\"name\":\"$2\",\"password\":\"${3}\"}" \
     $baseUrl/users
 }
 
 case $1 in
   get-users)
-    get_users
+    getUsers
     ;;
   get-blogs)
-    get_blogs
+    getBlogs
     ;;
-  login)
-    login
+  get-jwt)
+    getJWT $username $password
     ;;
-  post-blog)
-    post_blog
+  create-blog)
+    token=$(getJWT $username $password | jq -r '.token')
+    createBlog $token
+    ;;
+  delete-blog)
+    token=$(getJWT $username $password | jq -r '.token')
+    blogId=$(createBlog $token | jq -r '.id')
+    deleteBlog $blogId
     ;;
   post-user)
-    post_user
+    postUser "dgreen" "David Green" "dgr123"
     ;;
   *)
     echo 'Usage request.sh:\n'
     echo '  get-users     List all users'
     echo '  get-blogs     List all blogs'
-    echo '  login         Get a JWT'
-    echo '  post-blog     Create a new blog'
+    echo '  get-jwt       Get a JWT'
+    echo '  create-blog   Create a new blog'
     echo '  post-user     Create a new user'
     ;;
 esac

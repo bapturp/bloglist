@@ -1,4 +1,6 @@
 const logger = require('./logger')
+const jwt = require('jsonwebtoken')
+const { InvalidTokenError } = require('./error')
 
 const requestLogger = (request, response, next) => {
   logger.info('Method:', request.method)
@@ -16,6 +18,17 @@ const tokenExtractor = (request, response, next) => {
   next()
 }
 
+const userExtractor = (request, response, next) => {
+  if (request.token) {
+    const decodedToken = jwt.verify(request.token, process.env.SECRET)
+    if (!decodedToken.id) {
+      throw InvalidTokenError()
+    }
+    request.user = decodedToken
+  }
+  next()
+}
+
 const notFound = (request, response) => {
   response.status(404).json({ error: 'Not Found' })
 }
@@ -23,26 +36,49 @@ const notFound = (request, response) => {
 const errorHandler = (error, request, response, next) => {
   logger.error(error.message)
 
-  if (error.name === 'CastError') {
-    return response.status(400).json({ error: 'malformatted id' })
-  } else if (error.name === 'ValidationError') {
-    return response.status(400).json({ error: error.message })
-  } else if (
-    error.name === 'MongoServerError' &&
-    error.message.includes('E11000 duplicate key error')
-  ) {
-    return response
-      .status(400)
-      .json({ error: 'expected `username` to be unique' })
-  } else if (error.name === 'JsonWebTokenError') {
-    return response.status(401).json({ error: 'invalid token' })
-  } else if (error.name === 'PasswordValidation') {
-    return response.status(400).json({ error: error.message })
-  } else if (error.name === 'InvalidToken') {
-    return response.status(401).json({ error: e.message })
-  } else if (error.name === 'Unauthorized') {
-    return response.status(403).json({ error: error.message })
+  switch (error.name) {
+    case 'CastError':
+      return response.status(400).json({ error: 'malformatted id' })
+    case 'ValidationError':
+      return response.status(400).json({ error: error.message })
+    case 'MongoServerError':
+      if (error.message.includes('E11000 duplicate key error')) {
+        return response
+          .status(400)
+          .json({ error: 'expected `username` to be unique' })
+      }
+    case 'JsonWebTokenError':
+      return response.status(401).json({ error: 'invalid token' })
+    case 'PasswordValidation':
+      return response.status(400).json({ error: error.message })
+    case 'InvalidToken':
+      return response.status(401).json({ error: error.message })
+    case 'Unauthorized':
+      return response.status(403).json({ error: error.message })
+    default:
+      next(error)
   }
+
+  // if (error.name === 'CastError') {
+  //   return response.status(400).json({ error: 'malformatted id' })
+  // } else if (error.name === 'ValidationError') {
+  //   return response.status(400).json({ error: error.message })
+  // } else if (
+  //   error.name === 'MongoServerError' &&
+  //   error.message.includes('E11000 duplicate key error')
+  // ) {
+  //   return response
+  //     .status(400)
+  //     .json({ error: 'expected `username` to be unique' })
+  // } else if (error.name === 'JsonWebTokenError') {
+  //   return response.status(401).json({ error: 'invalid token' })
+  // } else if (error.name === 'PasswordValidation') {
+  //   return response.status(400).json({ error: error.message })
+  // } else if (error.name === 'InvalidToken') {
+  //   return response.status(401).json({ error: error.message })
+  // } else if (error.name === 'Unauthorized') {
+  //   return response.status(403).json({ error: error.message })
+  // }
 
   next(error)
 }
@@ -52,4 +88,5 @@ module.exports = {
   notFound,
   errorHandler,
   tokenExtractor,
+  userExtractor,
 }

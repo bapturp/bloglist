@@ -109,9 +109,9 @@ const rl = readline.createInterface({
 })
 
 rl.question(
-  'This operation is destructive, do you wan to seed the database? <yes><no>\n',
+  'This operation is destructive, do you wan to seed the database? [Y/n]\n',
   (answer) => {
-    if (answer === 'yes' || answer === 'y') {
+    if (answer === 'Y') {
       seedDb()
     }
     rl.close()
